@@ -8,6 +8,8 @@ The script leverages Kerberos and a [SAML-compatible IdP](https://docs.aws.amazo
 an AD domain password, or provide AWS credentials. However, users can also
 authenticate using NTLM with their username and password or with a Kerberos keytab.
 
+> See [our security policy](SECURITY.md) for handling of security-related matters.
+
 ## Configuration
 Kerb-STS looks for configuration in the ~/.kerb-sts/config.json file. This file contains the following fields: 
 
