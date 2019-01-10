@@ -166,7 +166,7 @@ class KerberosHandler:
                     logging.debug(sys.exc_info()[0])
 
         if default_role_creds_generation_unsuccessful:
-            raise Exception('failed to save temporary credentials for default role')
+            sys.exit(1)
 
     def _bind_assertion_to_role(self, assertion, role, profile, region,
                                 credentials_filename, config_filename, default_role):
