@@ -19,9 +19,10 @@ import logging
 import os
 import requests
 import xml.etree.ElementTree as ET
+import sys
+import traceback
 
 from bs4 import BeautifulSoup
-
 from kerb_sts.awsrole import AWSRole
 
 
@@ -133,24 +134,39 @@ class KerberosHandler:
 
         # Go through each of the available roles and
         # attempt to get temporary tokens for each
+        default_role_creds_generation_unsuccessful = False
         for aws_role in aws_roles:
             profile = AWSRole(aws_role).name
 
             if list_only:
                 logging.info("role: {}".format(profile))
             else:
-                token = self._bind_assertion_to_role(assertion, aws_role, profile,
-                                                     region, credentials_filename, config_filename, default_role)
+                try:
+                    token = self._bind_assertion_to_role(assertion, aws_role, profile,
+                                                         region, credentials_filename, config_filename, default_role)
 
-                if not token:
-                    raise Exception("did not receive a valid token from aws.")
+                    if not token:
+                        raise Exception('did not receive a valid token from aws')
 
-                expires_utc = token.credentials.expiration
+                    expires_utc = token.credentials.expiration
 
-                if default_role == profile:
-                    logging.info("default role: {} until {}".format(profile, expires_utc))
-                else:
-                    logging.info("role: {} until {}".format(profile, expires_utc))
+                    if default_role == profile:
+                        logging.info("default role: {} until {}".format(profile, expires_utc))
+                    else:
+                        logging.info("role: {} until {}".format(profile, expires_utc))
+                except Exception as ex:
+                    if default_role == profile:
+                        default_role_creds_generation_unsuccessful = True
+                        logging.error(
+                            'failed to save temporary credentials for default role {}: {}'.format(profile, ex)
+                        )
+                    else:
+                        logging.warning('failed to save temporary credentials for role {}: {}'.format(profile, ex))
+                    logging.debug(traceback.format_exc())
+                    logging.debug(sys.exc_info()[0])
+
+        if default_role_creds_generation_unsuccessful:
+            sys.exit(1)
 
     def _bind_assertion_to_role(self, assertion, role, profile, region,
                                 credentials_filename, config_filename, default_role):
