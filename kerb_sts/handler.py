@@ -163,7 +163,7 @@ class KerberosHandler:
                     else:
                         logging.warning('failed to save temporary credentials for role {}: {}'.format(profile, ex))
                     logging.debug(traceback.format_exc())
-                    logging.debug(sys.exc_info().get(0))
+                    logging.debug(sys.exc_info()[0])
 
         if default_role_creds_generation_unsuccessful:
             raise Exception('failed to save temporary credentials for default role')
