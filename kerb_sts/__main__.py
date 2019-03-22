@@ -173,6 +173,7 @@ def _setup_authenticator(options, config):
                 raise Exception('invalid preferred auth type {}'.format(config.preferred_auth_type))
         elif options.keytab:
             authenticator = KeytabAuthenticator(
+                kerb_hostname=config.kerb_hostname,
                 username=options.username,
                 keytab=options.keytab,
                 domain=options.domain

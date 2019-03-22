@@ -117,7 +117,8 @@ class KeytabAuthenticator(Authenticator):
     with those keytabs without requiring password input.
     """
 
-    def __init__(self, username, keytab, domain):
+    def __init__(self, kerb_hostname, username, keytab, domain):
+        self.kerb_hostname = kerb_hostname
         self.username = username
         self.keytab = keytab
         self.domain = domain
@@ -137,7 +138,7 @@ class KeytabAuthenticator(Authenticator):
             raise Exception("could not generate a valid ticket for the given keytab")
 
     def get_auth_handler(self, session):
-        return HTTPKerberosAuth(mutual_authentication=OPTIONAL)
+        return HTTPKerberosAuth(mutual_authentication=OPTIONAL, hostname_override=self.kerb_hostname)
 
     @staticmethod
     def get_auth_type():
