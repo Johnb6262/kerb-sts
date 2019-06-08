@@ -1,5 +1,5 @@
 # AWS KERBEROS STS
-Based on the ADSF-CLI script [originally posted by Quint Van Deman](https://blogs.aws.amazon.com/security/post/Tx1LDN0UBGJJ26Q/How-to-Implement-Federated-API-and-CLI-Access-Using-SAML-2-0-and-AD-FS).
+Based on the ADFS-CLI script [originally posted by Quint Van Deman](https://blogs.aws.amazon.com/security/post/Tx1LDN0UBGJJ26Q/How-to-Implement-Federated-API-and-CLI-Access-Using-SAML-2-0-and-AD-FS).
 
 ## Overview
 This script provides a seamless mechanism for federating the AWS CLI. When properly configured, this script allows a user to get a short lived (1 hour) set of credentials for each authorized role.
