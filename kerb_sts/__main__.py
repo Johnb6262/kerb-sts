@@ -67,6 +67,8 @@ def _get_options():
                         dest='daemon', action='store_true', default=False)
     parser.add_argument('-r', '--default_role', help="Name of the Role to use as the default",
                         dest='default_role', default=None)
+    parser.add_argument('-o', '--only_role', help="Name of the Role to use as the default (no other roles will be processed)",
+                        dest='only_role', default=None)
     parser.add_argument('-d', '--domain', help="AD Domain if using a Kerberos keytab or NTLM auth. Requires a username and password/keytab",
                         dest='domain', default=None)
     parser.add_argument('--keytab', help="The Kerberos keytab file. Requires a username and domain",
@@ -205,13 +207,16 @@ def _generate_tokens(options, config, authenticator):
     logging.info("region: {}".format(config.region))
     logging.info("url: {}".format(config.idp_url))
     logging.info("credentials file: {}".format(options.credentials_file))
-    if options.default_role:
+    if options.only_role:
+        logging.info("only role: {}".format(options.only_role))
+        options.default_role = options.only_role
+    elif options.default_role:
         logging.info("default role: {}".format(options.default_role))
     logging.info("auth type: {}".format(authenticator.get_auth_type()))
 
     h = KerberosHandler()
     h.handle_sts_by_kerberos(config.region, config.idp_url, options.credentials_file, options.config_file,
-                             options.default_role, options.list, authenticator)
+                             options.only_role, options.default_role, options.list, authenticator)
     logging.info("--------------------------------")
 
 

@@ -94,6 +94,11 @@ Users can then leverage the default role or use the AWS_DEFAULT_PROFILE environm
 select a specific role/profile. You can find more information about the credentials file
 in the [AWS Documentation](http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html#cli-config-files).
 
+#### Only Role
+If you have a lot of roles available, it may take a while to process all available roles.
+In this case, you can use the `-o` option and only the specified role will be processed.
+It will also be treated as the default role (`-r` option).
+
 #### Daemon
 By passing in a `--daemon` flag, the script will continue running and update the credentials file every
 half hour. The refresh time can be set with the `--refresh` argument, but remember
