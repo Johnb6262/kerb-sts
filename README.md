@@ -1,5 +1,5 @@
 # AWS KERBEROS STS
-Based on the ADSF-CLI script [originally posted by Quint Van Deman](https://blogs.aws.amazon.com/security/post/Tx1LDN0UBGJJ26Q/How-to-Implement-Federated-API-and-CLI-Access-Using-SAML-2-0-and-AD-FS).
+Based on the ADFS-CLI script [originally posted by Quint Van Deman](https://blogs.aws.amazon.com/security/post/Tx1LDN0UBGJJ26Q/How-to-Implement-Federated-API-and-CLI-Access-Using-SAML-2-0-and-AD-FS).
 
 ## Overview
 This script provides a seamless mechanism for federating the AWS CLI. When properly configured, this script allows a user to get a short lived (1 hour) set of credentials for each authorized role.
@@ -93,6 +93,11 @@ Additionally, all available roles will be added as named profiles to the credent
 Users can then leverage the default role or use the AWS_DEFAULT_PROFILE environment variable to
 select a specific role/profile. You can find more information about the credentials file
 in the [AWS Documentation](http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html#cli-config-files).
+
+#### Only Role
+If you have a lot of roles available, it may take a while to process all available roles.
+In this case, you can use the `-o` option and only the specified role will be processed.
+It will also be treated as the default role (`-r` option).
 
 #### Daemon
 By passing in a `--daemon` flag, the script will continue running and update the credentials file every
