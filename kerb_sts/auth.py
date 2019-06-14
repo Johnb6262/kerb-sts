@@ -19,6 +19,7 @@ import subprocess
 
 from requests_kerberos import HTTPKerberosAuth, OPTIONAL
 from requests_ntlm import HttpNtlmAuth
+from pexpect import popen_spawn
 
 
 class Authenticator(object):
@@ -52,16 +53,18 @@ class KerberosAuthenticator(Authenticator):
 
     @staticmethod
     def __generate_kerberos_ticket(username, password, domain):
-        try:
-            principal = '{}@{}'.format(username, domain)
-            kinit = pexpect.spawn('kinit {}'.format(principal))
-            kinit.sendline(password)
-            kinit.expect(pexpect.EOF)
-            kinit.close()
-            if kinit.exitstatus is not 0:
-                raise Exception('kinit failed for principal {}'.format(principal))
-        except Exception as ex:
-            raise ex
+        # Assume Windows users have a valid Kerberos ticket.
+        if os.name != 'nt':
+            try:
+                principal = '{}@{}'.format(username, domain)
+                kinit = pexpect.spawn('kinit {}'.format(principal))
+                kinit.sendline(password)
+                kinit.expect(pexpect.EOF)
+                kinit.close()
+                if kinit.exitstatus is not 0:
+                    raise Exception('kinit failed for principal {}'.format(principal))
+            except Exception as ex:
+                raise ex
 
     @staticmethod
     def __generate_kerberos_ticket_using_credentials_cache():
