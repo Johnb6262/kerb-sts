@@ -25,6 +25,8 @@ import traceback
 from bs4 import BeautifulSoup
 from kerb_sts.awsrole import AWSRole
 
+class DefaultRoleCredsGenerationError(Exception):
+    pass
 
 class KerberosHandler:
     """
@@ -43,7 +45,7 @@ class KerberosHandler:
         self.ssl_verification = True
 
     def handle_sts_by_kerberos(self, region, url, credentials_filename, config_filename,
-                               default_role, list_only, authenticator):
+                               only_role, default_role, list_only, authenticator):
         """
         Entry point for generating a set of temporary tokens from AWS.
         :param region: The AWS region tokens are being requested for
@@ -72,9 +74,9 @@ class KerberosHandler:
             )
 
         # We got a successful response from the IdP. Parse the assertion and pass it to AWS
-        self._handle_sts_from_response(response, region, credentials_filename, config_filename, default_role, list_only)
+        self._handle_sts_from_response(response, region, credentials_filename, config_filename, only_role, default_role, list_only)
 
-    def _handle_sts_from_response(self, response, region, credentials_filename, config_filename, default_role, list_only):
+    def _handle_sts_from_response(self, response, region, credentials_filename, config_filename, only_role, default_role, list_only):
         """
         Takes a successful SAML response, parses it for valid AWS IAM roles, and then reaches out to
         AWS and requests temporary tokens for each of the IAM roles.
@@ -134,39 +136,46 @@ class KerberosHandler:
 
         # Go through each of the available roles and
         # attempt to get temporary tokens for each
-        default_role_creds_generation_unsuccessful = False
-        for aws_role in aws_roles:
-            profile = AWSRole(aws_role).name
+        try:
+            for aws_role in aws_roles:
+                profile = AWSRole(aws_role).name
 
-            if list_only:
-                logging.info("role: {}".format(profile))
-            else:
-                try:
-                    token = self._bind_assertion_to_role(assertion, aws_role, profile,
-                                                         region, credentials_filename, config_filename, default_role)
-
-                    if not token:
-                        raise Exception('did not receive a valid token from aws')
-
-                    expires_utc = token.credentials.expiration
-
-                    if default_role == profile:
-                        logging.info("default role: {} until {}".format(profile, expires_utc))
+                if list_only:
+                    logging.info("role: {}".format(profile))
+                elif only_role is not None:
+                    if only_role == profile:
+                        self._generate_credentials_for_role(region, credentials_filename, config_filename, default_role, assertion, aws_role, profile)
                     else:
-                        logging.info("role: {} until {}".format(profile, expires_utc))
-                except Exception as ex:
-                    if default_role == profile:
-                        default_role_creds_generation_unsuccessful = True
-                        logging.error(
-                            'failed to save temporary credentials for default role {}: {}'.format(profile, ex)
-                        )
-                    else:
-                        logging.warning('failed to save temporary credentials for role {}'.format(profile))
-                    logging.debug(traceback.format_exc())
-                    logging.debug(sys.exc_info()[0])
-
-        if default_role_creds_generation_unsuccessful:
+                        logging.debug("skipping role {}; --only_role specified".format(profile))
+                else:
+                    self._generate_credentials_for_role(region, credentials_filename, config_filename, default_role, assertion, aws_role, profile)
+        except DefaultRoleCredsGenerationError:
             sys.exit(1)
+
+    def _generate_credentials_for_role(self, region, credentials_filename, config_filename, default_role, assertion, aws_role, profile):
+        try:
+            token = self._bind_assertion_to_role(assertion, aws_role, profile,
+                                                 region, credentials_filename, config_filename, default_role)
+
+            if not token:
+                raise Exception('did not receive a valid token from aws')
+
+            expires_utc = token.credentials.expiration
+
+            if default_role == profile:
+                logging.info("default role: {} until {}".format(profile, expires_utc))
+            else:
+                logging.info("role: {} until {}".format(profile, expires_utc))
+        except Exception as ex:
+            if default_role == profile:
+                logging.error(
+                    'failed to save temporary credentials for default role {}: {}'.format(profile, ex)
+                )
+                raise DefaultRoleCredsGenerationError('failed to save temporary credentials for default role {}: {}'.format(profile, ex))
+            else:
+                logging.warning('failed to save temporary credentials for role {}'.format(profile))
+            logging.debug(traceback.format_exc())
+            logging.debug(sys.exc_info()[0])
 
     def _bind_assertion_to_role(self, assertion, role, profile, region,
                                 credentials_filename, config_filename, default_role):

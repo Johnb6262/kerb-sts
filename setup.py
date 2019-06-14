@@ -26,6 +26,7 @@ setup(
     version=version,
 
     description='Renew AWS Simple Token Service Credentials',
+    long_description_content_type='text/markdown',
     long_description=long_description,
 
     url='https://github.com/commercehub-oss/kerb-sts.git',
