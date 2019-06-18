@@ -19,7 +19,6 @@ import subprocess
 
 from requests_kerberos import HTTPKerberosAuth, OPTIONAL
 from requests_ntlm import HttpNtlmAuth
-from pexpect import popen_spawn
 
 
 class Authenticator(object):
@@ -45,44 +44,63 @@ class KerberosAuthenticator(Authenticator):
 
     def __init__(self, kerb_hostname=None, username=None, password=None, domain=None):
         self.kerb_hostname = kerb_hostname if kerb_hostname else None
-
-        if username:
-            KerberosAuthenticator.__generate_kerberos_ticket(username, password, domain)
-        else:
-            KerberosAuthenticator.__generate_kerberos_ticket_using_credentials_cache()
+        self.username = username
+        self.password = password
+        self.domain = domain
 
     @staticmethod
-    def __generate_kerberos_ticket(username, password, domain):
-        # Assume Windows users have a valid Kerberos ticket.
-        if os.name != 'nt':
-            try:
-                principal = '{}@{}'.format(username, domain)
-                kinit = pexpect.spawn('kinit {}'.format(principal))
-                kinit.sendline(password)
-                kinit.expect(pexpect.EOF)
-                kinit.close()
-                if kinit.exitstatus is not 0:
-                    raise Exception('kinit failed for principal {}'.format(principal))
-            except Exception as ex:
-                raise ex
+    def __generate_kerberos_ticket_using_credentials(username, password, domain):
+        try:
+            principal = '{}@{}'.format(username, domain)
+            kinit = pexpect.spawn('kinit {}'.format(principal))
+            kinit.sendline(password)
+            kinit.expect(pexpect.EOF)
+            kinit.close()
+            if kinit.exitstatus is not 0:
+                raise Exception('kinit failed for principal {}'.format(principal))
+        except Exception as ex:
+            raise ex
 
     @staticmethod
     def __generate_kerberos_ticket_using_credentials_cache():
-        # Windows does not have support for `klist`. Assume
-        # Windows users have a valid Kerberos ticket.
-        if os.name != 'nt':
+        try:
+            subprocess.check_output(['klist', '-s'])
+        except subprocess.CalledProcessError:
+            logging.info('no kerberos ticket found. running kinit')
             try:
-                subprocess.check_output(['klist', '-s'])
-            except subprocess.CalledProcessError:
-                logging.info('no kerberos ticket found. running kinit')
-                try:
-                    subprocess.check_output(['kinit'])
-                except subprocess.CalledProcessError as err:
-                    logging.error('failed to generate a kerberos ticket')
-                    raise err
+                subprocess.check_output(['kinit'])
+            except subprocess.CalledProcessError as err:
+                logging.error('failed to generate a kerberos ticket')
+                raise err
+
+    def __generate_kerberos_ticket(self):
+        if self.username:
+            KerberosAuthenticator.__generate_kerberos_ticket_using_credentials(
+                self.username,
+                self.password,
+                self.domain
+            )
+        else:
+            KerberosAuthenticator.__generate_kerberos_ticket_using_credentials_cache()
+
+    def get_auth_handler_for_windows(self):
+        arguments = {'mutual_authentication': OPTIONAL, 'hostname_override': self.kerb_hostname}
+
+        if self.username:
+            arguments['principal'] = '{}@{}:{}'.format(self.username, self.domain, self.password)
+            return HTTPKerberosAuth(**arguments)
+
+        return HTTPKerberosAuth(**arguments)
+
+    def get_auth_handler_for_non_windows(self):
+        self.__generate_kerberos_ticket()
+        return HTTPKerberosAuth(mutual_authentication=OPTIONAL, hostname_override=self.kerb_hostname)
 
     def get_auth_handler(self, session):
-        return HTTPKerberosAuth(mutual_authentication=OPTIONAL, hostname_override=self.kerb_hostname)
+        if os.name == 'nt':
+            return self.get_auth_handler_for_windows()
+
+        return self.get_auth_handler_for_non_windows()
 
     @staticmethod
     def get_auth_type():
