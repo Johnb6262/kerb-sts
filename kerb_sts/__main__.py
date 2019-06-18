@@ -78,7 +78,7 @@ def _get_options():
     parser.add_argument('-p', '--password', help="AD Password if generating a temporary Kerberos token. Requires a username and domain",
                         dest='password', default=None)
     parser.add_argument('--refresh', help="Time to wait (minutes) between refreshing the tokens.",
-                        dest='refresh', default=30)
+                        dest='refresh', default=30, type=int)
     parser.add_argument('--region', help="AWS Region for STS (defaults to {})".format(DEFAULT_REGION),
                         dest='region', default=DEFAULT_REGION)
     parser.add_argument('-u', '--username', help="AD Username if generating a temporary Kerberos token. Requires a domain and password/keytab",
