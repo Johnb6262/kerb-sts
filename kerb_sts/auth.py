@@ -83,7 +83,7 @@ class KerberosAuthenticator(Authenticator):
         else:
             KerberosAuthenticator.__generate_kerberos_ticket_using_credentials_cache()
 
-    def get_auth_handler_for_windows(self):
+    def __get_auth_handler_for_windows(self):
         arguments = {'mutual_authentication': OPTIONAL, 'hostname_override': self.kerb_hostname}
 
         if self.username:
@@ -92,15 +92,15 @@ class KerberosAuthenticator(Authenticator):
 
         return HTTPKerberosAuth(**arguments)
 
-    def get_auth_handler_for_non_windows(self):
+    def __get_auth_handler_for_non_windows(self):
         self.__generate_kerberos_ticket()
         return HTTPKerberosAuth(mutual_authentication=OPTIONAL, hostname_override=self.kerb_hostname)
 
     def get_auth_handler(self, session):
         if os.name == 'nt':
-            return self.get_auth_handler_for_windows()
+            return self.__get_auth_handler_for_windows()
 
-        return self.get_auth_handler_for_non_windows()
+        return self.__get_auth_handler_for_non_windows()
 
     @staticmethod
     def get_auth_type():
