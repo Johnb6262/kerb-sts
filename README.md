@@ -1,3 +1,7 @@
+# THIS PROJECT IS DEPRECATED
+kerb-sts is no longer maintained, and **this** repository will be removed from GitHub on or after Wednesday, March 4, 2020. Published release artifacts will **continue** to be available indefinitely via
+PyPI.
+
 # AWS KERBEROS STS
 Based on the ADFS-CLI script [originally posted by Quint Van Deman](https://blogs.aws.amazon.com/security/post/Tx1LDN0UBGJJ26Q/How-to-Implement-Federated-API-and-CLI-Access-Using-SAML-2-0-and-AD-FS).
 
